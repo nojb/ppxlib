@@ -1250,15 +1250,16 @@ and copy_rec_flag : Ast_503.Asttypes.rec_flag -> Ast_502.Asttypes.rec_flag =
   | Ast_503.Asttypes.Recursive -> Ast_502.Asttypes.Recursive
 
 and copy_constant : Ast_503.Parsetree.constant -> Ast_502.Parsetree.constant =
-  function
-  | Ast_503.Parsetree.Pconst_integer (x0, x1) ->
-      Ast_502.Parsetree.Pconst_integer (x0, Option.map (fun x -> x) x1)
-  | Ast_503.Parsetree.Pconst_char x0 -> Ast_502.Parsetree.Pconst_char x0
-  | Ast_503.Parsetree.Pconst_string (x0, x1, x2) ->
-      Ast_502.Parsetree.Pconst_string
-        (x0, copy_location x1, Option.map (fun x -> x) x2)
-  | Ast_503.Parsetree.Pconst_float (x0, x1) ->
-      Ast_502.Parsetree.Pconst_float (x0, Option.map (fun x -> x) x1)
+  fun { pconst_desc; _ } ->
+   match pconst_desc with
+   | Ast_503.Parsetree.Pconst_integer (x0, x1) ->
+       Ast_502.Parsetree.Pconst_integer (x0, Option.map (fun x -> x) x1)
+   | Ast_503.Parsetree.Pconst_char x0 -> Ast_502.Parsetree.Pconst_char x0
+   | Ast_503.Parsetree.Pconst_string (x0, x1, x2) ->
+       Ast_502.Parsetree.Pconst_string
+         (x0, copy_location x1, Option.map (fun x -> x) x2)
+   | Ast_503.Parsetree.Pconst_float (x0, x1) ->
+       Ast_502.Parsetree.Pconst_float (x0, Option.map (fun x -> x) x1)
 
 and copy_Longident_t : Longident.t -> Longident.t = function
   | Longident.Lident x0 -> Longident.Lident x0
