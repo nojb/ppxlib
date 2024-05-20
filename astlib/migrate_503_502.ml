@@ -2,6 +2,10 @@ open Stdlib0
 module From = Ast_503
 module To = Ast_502
 
+let migration_error loc missing_feature =
+  Location.raise_errorf ~loc
+    "migration error: %s is not supported before OCaml 4.13" missing_feature
+
 let rec copy_toplevel_phrase :
     Ast_503.Parsetree.toplevel_phrase -> Ast_502.Parsetree.toplevel_phrase =
   function
@@ -222,8 +226,8 @@ and copy_type_constraint :
   Ast_503.Parsetree.type_constraint -> Ast_502.Parsetree.type_constraint =
   function
   | Ast_503.Parsetree.Pconstraint t -> Ast_502.Parsetree.Pconstraint (copy_core_type t)
-  | Ast_503.Parsetree.Pcoerce (t1,t2) -> Ast_502.Parsetree.Pcoerce (Option.map copy_core_type t1, copy_core_type t2) 
-                                            
+  | Ast_503.Parsetree.Pcoerce (t1,t2) -> Ast_502.Parsetree.Pcoerce (Option.map copy_core_type t1, copy_core_type t2)
+
 and copy_direction_flag :
     Ast_503.Asttypes.direction_flag -> Ast_502.Asttypes.direction_flag =
   function
@@ -266,14 +270,15 @@ and copy_pattern : Ast_503.Parsetree.pattern -> Ast_502.Parsetree.pattern =
        Ast_503.Parsetree.ppat_loc_stack;
        Ast_503.Parsetree.ppat_attributes;
      } ->
+  let ppat_loc = copy_location ppat_loc in
   {
-    Ast_502.Parsetree.ppat_desc = copy_pattern_desc ppat_desc;
-    Ast_502.Parsetree.ppat_loc = copy_location ppat_loc;
+    Ast_502.Parsetree.ppat_desc = copy_pattern_desc ppat_loc ppat_desc;
+    Ast_502.Parsetree.ppat_loc;
     Ast_502.Parsetree.ppat_loc_stack = copy_location_stack ppat_loc_stack;
     Ast_502.Parsetree.ppat_attributes = copy_attributes ppat_attributes;
   }
 
-and copy_pattern_desc :
+and copy_pattern_desc loc :
     Ast_503.Parsetree.pattern_desc -> Ast_502.Parsetree.pattern_desc = function
   | Ast_503.Parsetree.Ppat_any -> Ast_502.Parsetree.Ppat_any
   | Ast_503.Parsetree.Ppat_var x0 ->
@@ -319,6 +324,8 @@ and copy_pattern_desc :
         (copy_loc (fun x -> Option.map (fun x -> x) x) x0)
   | Ast_503.Parsetree.Ppat_exception x0 ->
       Ast_502.Parsetree.Ppat_exception (copy_pattern x0)
+  | Ast_503.Parsetree.Ppat_effect _ ->
+      migration_error loc "effect pattern"
   | Ast_503.Parsetree.Ppat_extension x0 ->
       Ast_502.Parsetree.Ppat_extension (copy_extension x0)
   | Ast_503.Parsetree.Ppat_open (x0, x1) ->
@@ -337,7 +344,7 @@ and copy_value_constraint : Ast_503.Parsetree.value_constraint -> Ast_502.Parset
       }
     | Ast_503.Parsetree.Pvc_coercion { ground; coercion} ->
       Ast_502.Parsetree.Pvc_coercion { ground = Option.map copy_core_type ground;
-                                       coercion = copy_core_type coercion} 
+                                       coercion = copy_core_type coercion}
 
 and copy_core_type : Ast_503.Parsetree.core_type -> Ast_502.Parsetree.core_type
     =
@@ -388,7 +395,7 @@ and copy_core_type_desc :
       Ast_502.Parsetree.Ptyp_poly
         (List.map (fun x -> copy_loc (fun x -> x) x) x0, copy_core_type x1)
   | Ast_503.Parsetree.Ptyp_package x0 ->
-      Ast_502.Parsetree.Ptyp_package (copy_package_type x0) 
+      Ast_502.Parsetree.Ptyp_package (copy_package_type x0)
   | Ast_503.Parsetree.Ptyp_open (x0,ty) ->
       Ast_502.Parsetree.Ptyp_open (copy_loc copy_Longident_t x0,copy_core_type ty)
  | Ast_503.Parsetree.Ptyp_extension x0 ->
